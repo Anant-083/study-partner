@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: study-partner
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile.free
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: STUDY_MODE
+        value: cloud
+      - key: HTTPS_ONLY
+        value: "1"
+      - key: FREE_TIER
+        value: "1"
+      - key: EMBEDDING_BACKEND
+        value: onnx
+      - key: MINILM_PATH
+        value: /app/models/minilm-onnx
+      - key: SECRET_KEY
+        generateValue: true
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_PUBLISHABLE_KEY
+        sync: false

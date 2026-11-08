@@ -46,6 +46,16 @@ The Dockerfile installs MiniLM and Tesseract for Strict mode. Dockerfile.full ad
 
 Cloud mode requires internet. Installing the PWA does not install server-side models onto a phone. Local and cloud accounts are separate; automatic local-to-cloud sync and account migration are not implemented.
 
+### Deploy the free cloud build to Render
+
+1. Create a Supabase project and configure the cloud tables, private `study-documents` storage bucket, and row-level ownership policies used by `cloud.py`.
+2. In Supabase Authentication settings, enable email/password sign-in and set the Site URL and allowed redirect URL to your eventual `https://<service>.onrender.com` address. Email confirmation may be enabled; new users then need to verify their email before signing in.
+3. In Render, choose **New → Blueprint**, select this GitHub repository, and deploy the `render.yaml` service. The Blueprint uses `Dockerfile.free`, which installs the smaller ONNX embedding runtime and Tesseract. The first image build downloads model files and can take several minutes.
+4. In the Render service environment, set `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` from Supabase's API settings. The Blueprint generates `SECRET_KEY`. Do not add a service-role key; cloud mode authenticates each request as the signed-in Supabase user.
+5. Wait for the `/health` check to pass, then open the HTTPS Render address on your phone.
+
+On Android, use Chrome's **Install app** or **Add to Home screen** option. On iPhone, open the site in Safari, tap **Share**, then **Add to Home Screen**. The app shell can be cached, but signing in, searching documents, uploading, and viewing saved data require internet access. Free Render services can sleep when idle, so the first visit may take time to wake up. The deployment remains subject to Render and Supabase free-tier limits; it is not an uptime guarantee. No live Render deployment has been performed from this repository.
+
 ## Privacy and limits
 No external AI inference API is used. Cloud mode does use Supabase APIs for authentication and storage. The service worker caches public interface assets only, never private documents or API responses. Local data is not encrypted at rest: protect the computer and data folder. Never commit data/, models/, tools/, .env files or logs.
 
