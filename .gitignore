@@ -1,9 +1,9 @@
 data/
 models/
-tools/
 .venv/
 __pycache__/
 .pytest_cache/
+tools/
 .env
 .env.*
 !.env.example

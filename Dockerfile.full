@@ -1,0 +1,16 @@
+FROM ollama/ollama:0.40.15 AS ollama
+FROM python:3.12-slim
+ENV PYTHONUNBUFFERED=1 PIP_NO_CACHE_DIR=1 OLLAMA_HOST=127.0.0.1:11434 OLLAMA_NO_CLOUD=1 OLLAMA_MODELS=/app/models/ollama
+WORKDIR /app
+RUN apt-get update && apt-get install -y --no-install-recommends tesseract-ocr libgomp1 libopenblas0 libvulkan1 && rm -rf /var/lib/apt/lists/*
+COPY --from=ollama /usr/bin/ollama /usr/bin/ollama
+COPY --from=ollama /usr/lib/ollama /usr/lib/ollama
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+COPY setup-model.py .
+RUN python setup-model.py
+RUN ollama serve & sleep 5; ollama pull llama3.2:3b
+COPY . .
+ENV STUDY_MODE=cloud HTTPS_ONLY=1
+EXPOSE 10000
+CMD ["python", "serve-full.py"]
