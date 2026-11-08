@@ -63,7 +63,7 @@ def register_cloud(app, extract, encoder):
         raw=f.read(); pages=extract(raw,ext)
         parts=[(n,t[i:i+1000]) for n,t in enumerate(pages,1) for i in range(0,len(t),800) if t[i:i+1000].strip()]
         if not parts: abort(400,'No readable text was found.')
-        if len(parts)>5000: abort(400,'This document is too large to index. Split it into smaller files.')
+        if len(parts)>(250 if os.environ.get('FREE_TIER') else 5000): abort(400,'This document is too large to index. Split it into smaller files.')
         vectors=encoder().encode([t for _,t in parts],normalize_embeddings=True).tolist()
         fid=str(uuid.uuid4()); uid=session['cloud_uid']; path=uid+'/'+fid
         c.storage.from_('study-documents').upload(path,raw,{'content-type':'application/octet-stream'})
@@ -102,7 +102,7 @@ def register_cloud(app, extract, encoder):
         import numpy as np
         from urllib.request import Request,urlopen
         c=client(); d=request.get_json(); scope=d.get('files',[]); question=d.get('question','').strip()[:2000]
-        if not question or not isinstance(scope,list) or not scope or len(scope)>100: abort(400,'Select up to 100 sources and enter a question.')
+        if not question or not isinstance(scope,list) or not scope or len(scope)>10: abort(400,'Select up to 10 sources and enter a question.')
         docs={r['id']:r for r in c.table('documents').select('*').eq('user_id',session['cloud_uid']).in_('id',scope).execute().data}
         if set(scope)!=set(docs): abort(403)
         old=None
@@ -115,6 +115,7 @@ def register_cloud(app, extract, encoder):
         while True:
             batch=c.table('passages').select('*').in_('document_id',scope).eq('user_id',session['cloud_uid']).order('id').range(offset,offset+499).execute().data
             rows+=batch
+            if len(rows)>5000: abort(400,'Choose fewer documents for this conversation.')
             if len(batch)<500: break
             offset+=500
         q=encoder().encode(question,normalize_embeddings=True)

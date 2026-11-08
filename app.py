@@ -119,8 +119,12 @@ def encoder():
     with model_lock:
         if model is None:
             if not (MODEL_PATH/'config.json').exists(): abort(503, 'Document search model is not installed. Run setup-model.py once while online.')
-            from sentence_transformers import SentenceTransformer
-            model = SentenceTransformer(str(MODEL_PATH), local_files_only=True)
+            if os.environ.get('EMBEDDING_BACKEND') == 'onnx':
+                from light_embeddings import MiniLM
+                model = MiniLM(MODEL_PATH)
+            else:
+                from sentence_transformers import SentenceTransformer
+                model = SentenceTransformer(str(MODEL_PATH), local_files_only=True)
     return model
 
 def extract(raw, ext):
@@ -142,16 +146,20 @@ def extract(raw, ext):
     if ext == 'pdf':
         import fitz
         with fitz.open(stream=raw,filetype='pdf') as doc:
-            if len(doc)>300: raise ValueError('Too many pages')
+            if len(doc) > (50 if os.environ.get('FREE_TIER') else 300): abort(400,'Split this PDF into smaller files. Free hosting supports up to 50 pages.')
             pages=[]
             for p in doc:
                 t=p.get_text()
                 if len(t.strip())<20:
-                    pix=p.get_pixmap(matrix=fitz.Matrix(2,2))
+                    scale=min(2,1800/max(p.rect.width,p.rect.height))
+                    pix=p.get_pixmap(matrix=fitz.Matrix(scale,scale))
                     t=pytesseract.image_to_string(Image.open(io.BytesIO(pix.tobytes('png'))), timeout=60)
                 pages.append(t)
             return pages
-    return [pytesseract.image_to_string(Image.open(io.BytesIO(raw)), timeout=60)]
+    img=Image.open(io.BytesIO(raw))
+    if img.width*img.height>20000000: abort(400,'Resize the image below 20 megapixels.')
+    img.thumbnail((2400,2400))
+    return [pytesseract.image_to_string(img, timeout=60)]
 
 @app.get('/api/files')
 @protected

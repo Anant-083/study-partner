@@ -1,0 +1,12 @@
+FROM python:3.12-slim
+ENV PYTHONUNBUFFERED=1 PIP_NO_CACHE_DIR=1 OMP_NUM_THREADS=1 TOKENIZERS_PARALLELISM=false
+WORKDIR /app
+RUN apt-get update && apt-get install -y --no-install-recommends tesseract-ocr libgomp1 && rm -rf /var/lib/apt/lists/*
+COPY requirements-free.txt .
+RUN pip install -r requirements-free.txt
+COPY setup-light-model.py .
+RUN python setup-light-model.py
+COPY . .
+ENV STUDY_MODE=cloud HTTPS_ONLY=1 EMBEDDING_BACKEND=onnx MINILM_PATH=/app/models/minilm-onnx FREE_TIER=1 WEB_THREADS=2
+EXPOSE 10000
+CMD ["python", "serve.py"]
