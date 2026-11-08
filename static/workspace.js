@@ -2,7 +2,7 @@ let token='',cloud=false,current=null,history=[],selected=new Set(),busy=false,i
 const $=s=>document.querySelector(s),welcome=$('#messages').innerHTML;
 const repeatLabel=el('label','Repeat new password'),repeatPassword=document.createElement('input');
 repeatPassword.name='confirm_password';repeatPassword.type='password';repeatPassword.autocomplete='new-password';
-repeatLabel.append(repeatPassword);repeatLabel.style.display='none';$('#signup').before(repeatLabel);
+repeatLabel.append(repeatPassword);repeatLabel.style.display='none';$('#login button:not([type=button])').before(repeatLabel);
 function setSignupMode(enabled){signupMode=enabled;repeatLabel.style.display=enabled?'grid':'none';repeatPassword.required=enabled;repeatPassword.value='';repeatPassword.setCustomValidity('');const password=$('#login input[name=password]');password.autocomplete=enabled?'new-password':'current-password';password.parentElement.firstChild.textContent=enabled?'New password':'Password';$('#login button:not([type=button])').textContent=enabled?'Create account':'Log in to your workspace →';$('#signup').textContent=enabled?'Back to log in':(cloud?'Create cloud account':'Create a local account');notice('')}
 function notice(t){$('#status').textContent=t}
 function fail(e){notice(e.message)}
